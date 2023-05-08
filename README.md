@@ -35,4 +35,7 @@ I created mask by repeatedly blurring a random bit image with a filter [1/4,1/2,
 ## Architecture
 writing...
 
+## Refernces
+- [Geoffrey Hinton. The Forward-Forward Algorithm: Some Preliminary Investigations](https://arxiv.org/pdf/2212.13345.pdf)
+- [mohammadpz/pytorch_forward_forward](https://github.com/mohammadpz/pytorch_forward_forward)
 
