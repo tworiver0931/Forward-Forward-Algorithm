@@ -9,15 +9,15 @@ import random
 
 
 class FFDataset(Dataset):
-    def __init__(self, x_pos, x_neg):
-        self.x_pos = x_pos.reshape(x_pos.shape[0], -1)
-        self.x_neg = x_neg.reshape(x_neg.shape[0], -1)
+    def __init__(self, h_pos, h_neg):
+        self.h_pos = h_pos
+        self.h_neg = h_neg
 
     def __len__(self):
-        return self.x_pos.shape[0]
+        return self.h_pos.shape[0]
 
     def __getitem__(self, idx):
-        return self.x_pos[idx], self.x_neg[idx]
+        return self.h_pos[idx], self.h_neg[idx]
 
 
 class SoftmaxDataset(Dataset):

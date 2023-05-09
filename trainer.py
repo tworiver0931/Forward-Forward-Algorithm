@@ -1,28 +1,30 @@
 import torch
-from torchvision.datasets import MNIST
 from model import FFNN, SoftmaxLayer
 from utils import create_neg
 
 
 class Trainer:
-    def __init__(self, dims, threshold=0, lr=0.001, batch_size=256, epochs=100, device='cuda:0'):
-      
-        train_mnist_set = MNIST('./data/', train=True,
-                                download=True)
+    def __init__(self, train_set, ff_dims, out_dim, threshold=1, lr=0.001, batch_size=512, epochs=100, dropout=0, device='cuda:0'):
         self.device = device
 
-        self.x_pos, self.y = train_mnist_set.data, train_mnist_set.targets
-        self.x_pos = self.x_pos.type(torch.float32)
-        self.x_pos = (self.x_pos - 0.1307) / 0.3081
+        self.x_pos, self.y = train_set.data, train_set.targets
+        
+        # normalize data
+        self.x_pos = self.x_pos.type(torch.float32) / 255
+        self.mean, self.std = self.x_pos.mean(), self.x_pos.std()
+        self.x_pos = (self.x_pos - self.mean) / self.std
 
         self.x_neg = create_neg(self.x_pos)
+
+        self.x_pos = self.x_pos.reshape(self.x_pos.shape[0], -1)
+        self.x_neg = self.x_neg.reshape(self.x_neg.shape[0], -1)
 
         self.x_pos = self.x_pos.to(device)
         self.x_neg = self.x_neg.to(device)
         self.y = self.y.to(device)
 
-        self.ffnn = FFNN(dims, threshold, lr, batch_size, epochs, device)
-        self.softmaxlayer = SoftmaxLayer(sum(dims[2:]), lr, batch_size, epochs)
+        self.ffnn = FFNN(ff_dims, threshold, lr, batch_size, epochs, dropout, device)
+        self.softmaxlayer = SoftmaxLayer(sum(ff_dims[2:]), out_dim, lr, batch_size, epochs, dropout)
 
         self.ffnn.to(device)
         self.softmaxlayer.to(device)
@@ -41,23 +43,20 @@ class Trainer:
         print('[Start training Softmax-Layer]')
         self.softmax_his = self.softmaxlayer.train(pos_cat, self.y)
 
-    def test(self):
+    def test(self, test_set):
         print('[Test]')
 
-        test_mnist_set = MNIST('./data/', train=False,
-                               download=True)
-
-        x_test, y_test = test_mnist_set.data, test_mnist_set.targets
-        x_test = x_test.type(torch.float32)
-        x_test = (x_test - 0.1307) / 0.3081
+        x_test, y_test = test_set.data, test_set.targets
+        x_test = x_test.type(torch.float32) / 255
+        x_test = (x_test - self.mean) / self.std
         x_test = x_test.reshape(x_test.shape[0], -1)
         x_test = x_test.to(self.device)
         y_test = y_test.to(self.device)
-
+        
         with torch.no_grad():
-            test_outputs = self.ffnn(x_test)
+            test_outputs = self.ffnn.predict(x_test)
             test_cat = torch.cat(test_outputs[1:], dim=1)
-            pred = self.softmaxlayer(test_cat)
+            preds = self.softmaxlayer.predict(test_cat)
 
-        acc = (torch.argmax(pred, 1) == y_test).float().mean()
+        acc = (torch.argmax(preds, 1) == y_test).float().mean()
         print('test error: ', 1 - acc.item())

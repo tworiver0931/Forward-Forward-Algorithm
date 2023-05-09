@@ -9,10 +9,12 @@ from utils import FFDataset, SoftmaxDataset
 
 
 class FFLayer(nn.Module):
-    def __init__(self, in_dims, out_dims, threshold, lr, batch_size, epochs, device):
+    def __init__(self, in_dims, out_dims, threshold, lr, batch_size, epochs, dropout, device):
         super().__init__()
 
         self.linear = nn.Linear(in_dims, out_dims)
+        self.dropout = nn.Dropout(dropout)
+
         self.opt = torch.optim.Adam(self.parameters(), lr=lr)
         self.threshold = threshold
         self.batch_size = batch_size
@@ -26,10 +28,10 @@ class FFLayer(nn.Module):
 
     def forward(self, x):
         x = self.normalize(x)
-        x = F.relu(self.linear(x))
-        return x
+        return F.relu(self.dropout(self.linear(x)))
 
-    def train(self, dataset):
+    def train(self, h_pos, h_neg):
+        dataset = FFDataset(h_pos, h_neg)
         dataloader = DataLoader(
             dataset, batch_size=self.batch_size, shuffle=True)
 
@@ -38,11 +40,11 @@ class FFLayer(nn.Module):
 
         for _ in bar:
             epoch_loss = 0
-            for x_pos, x_neg in dataloader:
-                g_pos = self.forward(x_pos).pow(2).sum(1) - self.threshold
-                g_neg = self.forward(x_neg).pow(2).sum(1) - self.threshold
+            for h_pos_batch, h_neg_batch in dataloader:
+                g_pos = self.forward(h_pos_batch).pow(2).sum(1)
+                g_neg = self.forward(h_neg_batch).pow(2).sum(1)
 
-                loss = self.criterion(torch.cat([g_pos, g_neg]),
+                loss = self.criterion(torch.cat([g_pos-self.threshold, g_neg-self.threshold]),
                                       torch.cat([torch.ones((g_pos.shape[0]), device=self.device),
                                                  torch.zeros((g_neg.shape[0]), device=self.device)]))
 
@@ -56,21 +58,24 @@ class FFLayer(nn.Module):
             bar.set_postfix({'Loss': epoch_loss})
             loss_history.append(epoch_loss)
 
-        x_pos, x_neg = dataset[:][0], dataset[:][1]
-        x_pos = self.forward(x_pos)
-        x_neg = self.forward(x_neg)
+        h_pos = self.forward(h_pos)
+        h_neg = self.forward(h_neg)
 
-        return x_pos.detach(), x_neg.detach(), loss_history
+        return h_pos.detach(), h_neg.detach(), loss_history
+    
+    def predict(self, x):
+        x = self.normalize(x)
+        return F.relu(self.linear(x))
 
 
 class FFNN(nn.Module):
-    def __init__(self, dims, threshold, lr, batch_size, epochs, device):
+    def __init__(self, dims, threshold, lr, batch_size, epochs, dropout, device):
         super().__init__()
 
         self.fflayers = nn.ModuleList()
         for d in range(len(dims) - 1):
             self.fflayers.append(
-                FFLayer(dims[d], dims[d+1], threshold, lr, batch_size, epochs, device))
+                FFLayer(dims[d], dims[d+1], threshold, lr, batch_size, epochs, dropout, device))
 
     def train(self, x_pos, x_neg):
         h_pos, h_neg = x_pos, x_neg
@@ -80,28 +85,27 @@ class FFNN(nn.Module):
 
         for i, layer in enumerate(self.fflayers):
             print(f'Training {i} ff-layer')
-            dataset = FFDataset(h_pos, h_neg)
-
-            h_pos, h_neg, loss_history = layer.train(dataset)
+            h_pos, h_neg, loss_history = layer.train(h_pos, h_neg)
 
             pos_outputs.append(h_pos)
             total_loss_history.append(loss_history)
 
         return pos_outputs, total_loss_history
 
-    def forward(self, x):
+    def predict(self, x):
         outputs = []
         for i, layer in enumerate(self.fflayers):
-            x = layer(x)
+            x = layer.predict(x)
             outputs.append(x)
         return outputs
 
 
 class SoftmaxLayer(nn.Module):
-    def __init__(self, in_dim, lr, batch_size, epochs):
+    def __init__(self, in_dim, out_dim, lr, batch_size, epochs, dropout):
         super().__init__()
 
-        self.linear = nn.Linear(in_dim, 10)
+        self.linear = nn.Linear(in_dim, out_dim)
+        self.dropout = nn.Dropout(dropout)
 
         self.criterion = nn.CrossEntropyLoss()
 
@@ -111,7 +115,7 @@ class SoftmaxLayer(nn.Module):
         self.epochs = epochs
 
     def forward(self, x):
-        return self.linear(x)
+        return self.linear(self.dropout(x))
 
     def train(self, x, y):
         dataset = SoftmaxDataset(x, y)
@@ -119,10 +123,11 @@ class SoftmaxLayer(nn.Module):
             dataset, batch_size=self.batch_size, shuffle=True)
 
         bar = tqdm(range(self.epochs))
-        loss_history = []
+        history = {'loss': [], 'acc': []}
 
         for _ in bar:
             epoch_loss = 0
+            epoch_acc = 0
             for x, y in dataloader:
                 x_ = self.forward(x)
                 loss = self.criterion(x_, y)
@@ -132,9 +137,16 @@ class SoftmaxLayer(nn.Module):
                 self.opt.step()
 
                 epoch_loss += loss.item()
+                epoch_acc += (torch.argmax(x_, 1) == y).float().mean().item()
 
             epoch_loss /= len(dataloader)
-            bar.set_postfix({'Loss': epoch_loss})
-            loss_history.append(epoch_loss)
+            epoch_acc /= len(dataloader)
 
-        return loss_history
+            bar.set_postfix({'Loss': epoch_loss, 'Acc': epoch_acc})
+            history['loss'].append(epoch_loss)
+            history['acc'].append(epoch_acc)
+
+        return history
+    
+    def predict(self, x):
+      return self.linear(x)
