@@ -33,7 +33,9 @@
 I created mask by repeatedly blurring a random bit image with a filter [1/4,1/2,1/4] in both the horizontal and vertical as the paper explained. Then generated negative data by x1 * mask + x2 * (1-mask) with random x1, x2 in original mnist data.
 
 ## Architecture
-writing...
+<img src="https://github.com/tworiver0931/Forward-Forward-Unsupervised/assets/63793194/8a763a7b-dc55-4242-a580-b95ae46cfdca" width="510" height="300">
+
+Both positive and negative data go into input of the first FF layer. After training the first layer, the layer outputs representation and it go into input of the second FF layer and so on. Each FF layer has a normalization term(to eliminate length of activity vector and pass only orientation) in front of them. After training all FF layers, representations of positive data except first layer go into softmax layer to train classification task.
 
 ## References
 - [Geoffrey Hinton. The Forward-Forward Algorithm: Some Preliminary Investigations](https://arxiv.org/pdf/2212.13345.pdf)
