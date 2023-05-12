@@ -5,7 +5,6 @@ import numpy as np
 import cv2
 
 from tqdm import tqdm
-import random
 
 
 class FFDataset(Dataset):
@@ -39,7 +38,7 @@ def create_neg(x):
     mask = mask.astype(np.float32)
     print('Create negative datas')
     for i in tqdm(range(n)):
-        for _ in range(random.randrange(10, 60)):
+        for _ in range(30):
             mask[i] = cv2.filter2D(
                 mask[i], -1, kernel=np.array([[1/4, 1/2, 1/4]]))
             mask[i] = cv2.filter2D(

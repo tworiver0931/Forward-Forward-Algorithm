@@ -24,7 +24,7 @@ class Trainer:
         self.y = self.y.to(device)
 
         self.ffnn = FFNN(ff_dims, threshold, lr, batch_size, epochs, dropout, device)
-        self.softmaxlayer = SoftmaxLayer(sum(ff_dims[2:]), out_dim, lr, batch_size, epochs, dropout)
+        self.softmaxlayer = SoftmaxLayer(sum(ff_dims[2:]), out_dim, lr, batch_size, epochs)
 
         self.ffnn.to(device)
         self.softmaxlayer.to(device)
@@ -33,14 +33,13 @@ class Trainer:
         self.softmax_his = None
 
     def train(self):
-        print('[Start training FF-Layers]')
+        print('\n[Start training FF-Layers]')
         pos_outputs, self.ffnn_his = self.ffnn.train(self.x_pos, self.x_neg)
 
         # use positive data outputs except first ff-layer
         pos_cat = torch.cat(pos_outputs[1:], dim=1)
-        print(pos_cat.shape)
 
-        print('[Start training Softmax-Layer]')
+        print('\n[Start training Softmax-Layer]')
         self.softmax_his = self.softmaxlayer.train(pos_cat, self.y)
 
     def test(self, test_set):
@@ -56,7 +55,7 @@ class Trainer:
         with torch.no_grad():
             test_outputs = self.ffnn.predict(x_test)
             test_cat = torch.cat(test_outputs[1:], dim=1)
-            preds = self.softmaxlayer.predict(test_cat)
+            preds = self.softmaxlayer(test_cat)
 
         acc = (torch.argmax(preds, 1) == y_test).float().mean()
         print('test error: ', 1 - acc.item())

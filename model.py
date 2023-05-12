@@ -101,11 +101,10 @@ class FFNN(nn.Module):
 
 
 class SoftmaxLayer(nn.Module):
-    def __init__(self, in_dim, out_dim, lr, batch_size, epochs, dropout):
+    def __init__(self, in_dim, out_dim, lr, batch_size, epochs):
         super().__init__()
 
         self.linear = nn.Linear(in_dim, out_dim)
-        self.dropout = nn.Dropout(dropout)
 
         self.criterion = nn.CrossEntropyLoss()
 
@@ -115,7 +114,7 @@ class SoftmaxLayer(nn.Module):
         self.epochs = epochs
 
     def forward(self, x):
-        return self.linear(self.dropout(x))
+        return self.linear(x)
 
     def train(self, x, y):
         dataset = SoftmaxDataset(x, y)
@@ -147,6 +146,3 @@ class SoftmaxLayer(nn.Module):
             history['acc'].append(epoch_acc)
 
         return history
-    
-    def predict(self, x):
-      return self.linear(x)
