@@ -37,6 +37,10 @@ I created mask by repeatedly blurring a random bit image with a filter [1/4,1/2,
 
 Both positive and negative data go into input of the first FF layer. After training the first layer, the layer outputs representation and it go into input of the second FF layer and so on. Each FF layer has a normalization term(to eliminate length of activity vector and pass only orientation) in front of them. After training all FF layers, representations of positive data except first layer go into softmax layer to train classification task.
 
+## Local Receptive Field
+In the paper, Hinton also trained FF with local receptive fields without weight sharing. Pytorch doesn't offer this module, so I implemented it with reference to Keras LocalConv2D. It works same as convolution, but in each operation, the kernel doesn't share weights.
+                                                                           He used "peer normalization" in this experiment. I think it's similar to batch normalization, but still not sure what peer normalization is. So I used batch normalization instead of peer.                                   
+
 ## References
 - [Geoffrey Hinton. The Forward-Forward Algorithm: Some Preliminary Investigations](https://arxiv.org/pdf/2212.13345.pdf)
 - [mohammadpz/pytorch_forward_forward](https://github.com/mohammadpz/pytorch_forward_forward)
