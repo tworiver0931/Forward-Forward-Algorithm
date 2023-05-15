@@ -44,7 +44,7 @@ In the paper, Hinton also trained FF with local receptive fields without weight 
 He used "peer normalization" in this experiment. I think it's similar to batch normalization, but still not sure what peer normalization is. So I used batch normalization instead of peer.
                                                                            
                                                                            
-Test errors of my implementation didn't achive that of the experiment in the paper. It's just for personal study.
+Test errors of my implementation didn't achieve that of the experiment in the paper. It's just for personal study.
 
                                                                                                        
 ## References
