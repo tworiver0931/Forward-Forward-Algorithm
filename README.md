@@ -39,8 +39,14 @@ Both positive and negative data go into input of the first FF layer. After train
 
 ## Local Receptive Field
 In the paper, Hinton also trained FF with local receptive fields without weight sharing. Pytorch doesn't offer this module, so I implemented it with reference to Keras LocalConv2D. It works same as convolution, but in each operation, the kernel doesn't share weights.
-                                                                           He used "peer normalization" in this experiment. I think it's similar to batch normalization, but still not sure what peer normalization is. So I used batch normalization instead of peer.                                   
 
+                                                                                                                                                     
+He used "peer normalization" in this experiment. I think it's similar to batch normalization, but still not sure what peer normalization is. So I used batch normalization instead of peer.
+                                                                           
+                                                                           
+Test errors of my implementation didn't achive that of the experiment in the paper. It's just for personal study.
+
+                                                                                                       
 ## References
 - [Geoffrey Hinton. The Forward-Forward Algorithm: Some Preliminary Investigations](https://arxiv.org/pdf/2212.13345.pdf)
 - [mohammadpz/pytorch_forward_forward](https://github.com/mohammadpz/pytorch_forward_forward)
