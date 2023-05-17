@@ -33,8 +33,9 @@
 I created mask by repeatedly blurring a random bit image with a filter [1/4,1/2,1/4] in both the horizontal and vertical as the paper explained. Then generated negative data by x1 * mask + x2 * (1-mask) with random x1, x2 in original mnist data.
 
 ## Architecture
-<img src="https://github.com/tworiver0931/Forward-Forward-Unsupervised/assets/63793194/4a40f3b0-57f0-41d8-a848-d43586b0b9ac" width="510" height="300">
+<img src="https://github.com/tworiver0931/Forward-Forward-Unsupervised/assets/63793194/4a40f3b0-57f0-41d8-a848-d43586b0b9ac" width="510" height="350">
 
+                                                                                                                                                     
 Each FF layer has an objective that increases(decreases) the goodnes of positive(negative) activities. Both positive and negative data go into input of the first FF layer. After training the first layer, the layer outputs representation and it go into input of the second FF layer and so on. Each FF layer has a normalization term(to eliminate length of activity vector and pass only orientation) in front of them. After training all FF layers, representations of positive data except first layer go into softmax layer to train classification task.
 
 ## Local Receptive Field
