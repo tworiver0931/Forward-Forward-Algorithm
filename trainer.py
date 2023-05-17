@@ -47,13 +47,14 @@ class FCTrainer:
 
     def train(self):
         print('\n[Start training FF-Layers]')
-        pos_outputs, self.ffnn_his = self.ffnn.train(self.x_pos, self.x_neg)
+        pos_outputs, self.ffnn_his = self.ffnn.train_net(
+            self.x_pos, self.x_neg)
 
         # use positive data outputs except first ff-layer
         pos_cat = torch.cat(pos_outputs[1:], dim=1)
 
         print('\n[Start training Softmax-Layer]')
-        self.softmax_his = self.softmaxlayer.train(pos_cat, self.y)
+        self.softmax_his = self.softmaxlayer.train_layer(pos_cat, self.y)
 
     def test(self, test_set):
         print('[Test]')
@@ -68,6 +69,8 @@ class FCTrainer:
         with torch.no_grad():
             test_outputs = self.ffnn.predict(x_test)
             test_cat = torch.cat(test_outputs[1:], dim=1)
+
+            self.softmaxlayer.eval()
             preds = self.softmaxlayer(test_cat)
 
         acc = (torch.argmax(preds, 1) == y_test).float().mean()
@@ -137,7 +140,8 @@ class RFTrainer:
 
     def train(self):
         print('\n[Start training FF-Layers]')
-        pos_outputs, self.ffnn_his = self.ffnn.train(self.x_pos, self.x_neg)
+        pos_outputs, self.ffnn_his = self.ffnn.train_net(
+            self.x_pos, self.x_neg)
 
         # use positive data outputs except first ff-layer
         pos_outputs = [output.reshape(output.shape[0], -1)
@@ -145,7 +149,7 @@ class RFTrainer:
         pos_cat = torch.cat(pos_outputs[1:], dim=1)
 
         print('\n[Start training Softmax-Layer]')
-        self.softmax_his = self.softmaxlayer.train(pos_cat, self.y)
+        self.softmax_his = self.softmaxlayer.train_layer(pos_cat, self.y)
 
     def test(self, test_set):
         print('[Test]')
@@ -163,6 +167,8 @@ class RFTrainer:
             test_outputs = [output.reshape(output.shape[0], -1)
                             for output in test_outputs]
             test_cat = torch.cat(test_outputs[1:], dim=1)
+
+            self.softmaxlayer.eval()
             preds = self.softmaxlayer(test_cat)
 
         acc = (torch.argmax(preds, 1) == y_test).float().mean()

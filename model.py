@@ -31,7 +31,7 @@ class FFLayer(nn.Module):
         x = self.normalize(x)
         return F.relu(self.dropout(self.linear(x)))
 
-    def train(self, h_pos, h_neg):
+    def train_layer(self, h_pos, h_neg):
         dataset = FFDataset(h_pos, h_neg)
         dataloader = DataLoader(
             dataset, batch_size=self.batch_size, shuffle=True)
@@ -42,8 +42,8 @@ class FFLayer(nn.Module):
         for _ in bar:
             epoch_loss = 0
             for h_pos_batch, h_neg_batch in dataloader:
-                g_pos = self.forward(h_pos_batch).pow(2).sum(1)
-                g_neg = self.forward(h_neg_batch).pow(2).sum(1)
+                g_pos = self(h_pos_batch).pow(2).sum(1)
+                g_neg = self(h_neg_batch).pow(2).sum(1)
 
                 loss = self.criterion(torch.cat([g_pos-self.threshold, g_neg-self.threshold]),
                                       torch.cat([torch.ones((g_pos.shape[0]), device=self.device),
@@ -59,14 +59,11 @@ class FFLayer(nn.Module):
             bar.set_postfix({'Loss': epoch_loss})
             loss_history.append(epoch_loss)
 
-        h_pos = self.forward(h_pos)
-        h_neg = self.forward(h_neg)
+        self.eval()
+        h_pos = self(h_pos)
+        h_neg = self(h_neg)
 
         return h_pos.detach(), h_neg.detach(), loss_history
-
-    def predict(self, x):
-        x = self.normalize(x)
-        return F.relu(self.linear(x))
 
 
 class FFNN(nn.Module):
@@ -78,7 +75,7 @@ class FFNN(nn.Module):
             self.fflayers.append(
                 FFLayer(dims[d], dims[d+1], threshold, lr, batch_size, epochs, dropout, device))
 
-    def train(self, x_pos, x_neg):
+    def train_net(self, x_pos, x_neg):
         h_pos, h_neg = x_pos, x_neg
 
         pos_outputs = []
@@ -86,7 +83,9 @@ class FFNN(nn.Module):
 
         for i, layer in enumerate(self.fflayers):
             print(f'Training {i} ff-layer')
-            h_pos, h_neg, loss_history = layer.train(h_pos, h_neg)
+            layer.train()
+
+            h_pos, h_neg, loss_history = layer.train_layer(h_pos, h_neg)
 
             pos_outputs.append(h_pos)
             total_loss_history.append(loss_history)
@@ -96,7 +95,8 @@ class FFNN(nn.Module):
     def predict(self, x):
         outputs = []
         for i, layer in enumerate(self.fflayers):
-            x = layer.predict(x)
+            layer.eval()
+            x = layer(x)
             outputs.append(x)
         return outputs
 
@@ -206,7 +206,7 @@ class FFRFLayer(nn.Module):
         x = x / (x.norm(p=2, dim=(1, 2, 3), keepdim=True) + 1e-7)
         return F.relu(self.dropout(self.peer_norm(self.local_conv(x))))
 
-    def train(self, h_pos, h_neg):
+    def train_layer(self, h_pos, h_neg):
         dataset = FFDataset(h_pos, h_neg)
         dataloader = DataLoader(
             dataset, batch_size=self.batch_size, shuffle=True)
@@ -217,8 +217,8 @@ class FFRFLayer(nn.Module):
         for _ in bar:
             epoch_loss = 0
             for h_pos_batch, h_neg_batch in dataloader:
-                g_pos = self.forward(h_pos_batch).pow(2).mean(dim=(1, 2, 3))
-                g_neg = self.forward(h_neg_batch).pow(2).mean(dim=(1, 2, 3))
+                g_pos = self(h_pos_batch).pow(2).mean(dim=(1, 2, 3))
+                g_neg = self(h_neg_batch).pow(2).mean(dim=(1, 2, 3))
 
                 loss = self.criterion(torch.cat([g_pos-self.threshold, g_neg-self.threshold]),
                                       torch.cat([torch.ones((g_pos.shape[0]), device=self.device),
@@ -234,14 +234,11 @@ class FFRFLayer(nn.Module):
             bar.set_postfix({'Loss': epoch_loss})
             loss_history.append(epoch_loss)
 
-        h_pos = self.forward(h_pos)
-        h_neg = self.forward(h_neg)
+        self.eval()
+        h_pos = self(h_pos)
+        h_neg = self(h_neg)
 
         return h_pos.detach(), h_neg.detach(), loss_history
-
-    def predict(self, x):
-        x = x / (x.norm(p=2, dim=(1, 2, 3), keepdim=True) + 1e-7)
-        return F.relu(self.peer_norm(self.local_conv(x)))
 
 
 class FFRFNN(nn.Module):
@@ -265,7 +262,7 @@ class FFRFNN(nn.Module):
             self.fflayers.append(
                 FFRFLayer(out_channel_list[d], input_shape_list[d], kernel_size_list[d], strides_list[d], threshold, lr, batch_size, epochs, dropout, device))
 
-    def train(self, x_pos, x_neg):
+    def train_net(self, x_pos, x_neg):
         h_pos, h_neg = x_pos, x_neg
 
         pos_outputs = []
@@ -273,7 +270,9 @@ class FFRFNN(nn.Module):
 
         for i, layer in enumerate(self.fflayers):
             print(f'Training {i} ff-layer')
-            h_pos, h_neg, loss_history = layer.train(h_pos, h_neg)
+            layer.train()
+            
+            h_pos, h_neg, loss_history = layer.train_layer(h_pos, h_neg)
 
             pos_outputs.append(h_pos)
             total_loss_history.append(loss_history)
@@ -283,7 +282,8 @@ class FFRFNN(nn.Module):
     def predict(self, x):
         outputs = []
         for i, layer in enumerate(self.fflayers):
-            x = layer.predict(x)
+            layer.eval()
+            x = layer(x)
             outputs.append(x)
         return outputs
 
@@ -304,13 +304,15 @@ class SoftmaxLayer(nn.Module):
     def forward(self, x):
         return self.linear(x)
 
-    def train(self, x, y):
+    def train_layer(self, x, y):
         dataset = SoftmaxDataset(x, y)
         dataloader = DataLoader(
             dataset, batch_size=self.batch_size, shuffle=True)
 
         bar = tqdm(range(self.epochs))
         history = {'loss': [], 'acc': []}
+
+        self.train()
 
         for _ in bar:
             epoch_loss = 0
