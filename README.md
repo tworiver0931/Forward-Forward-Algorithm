@@ -35,13 +35,13 @@ I created mask by repeatedly blurring a random bit image with a filter [1/4,1/2,
 ## Architecture
 <img src="https://github.com/tworiver0931/Forward-Forward-Unsupervised/assets/63793194/8a763a7b-dc55-4242-a580-b95ae46cfdca" width="510" height="300">
 
-Both positive and negative data go into input of the first FF layer. After training the first layer, the layer outputs representation and it go into input of the second FF layer and so on. Each FF layer has a normalization term(to eliminate length of activity vector and pass only orientation) in front of them. After training all FF layers, representations of positive data except first layer go into softmax layer to train classification task.
+Each FF layer has an objective that increases(decreases) the goodnes of positive(negative) activities. Both positive and negative data go into input of the first FF layer. After training the first layer, the layer outputs representation and it go into input of the second FF layer and so on. Each FF layer has a normalization term(to eliminate length of activity vector and pass only orientation) in front of them. After training all FF layers, representations of positive data except first layer go into softmax layer to train classification task.
 
 ## Local Receptive Field
 In the paper, Hinton also trained FF with local receptive fields without weight sharing. Pytorch doesn't offer this module, so I implemented it with reference to Keras LocalConv2D. It works same as convolution, but in each operation, the kernel doesn't share weights.
 
                                                                                                                                                      
-He used "peer normalization" in this experiment. I think it's similar to batch normalization, but still not sure what peer normalization is. So I used batch normalization instead of peer.
+Hinton used "peer normalization" in this experiment. I think it's similar to batch normalization, but still not sure what peer normalization is. So I used batch normalization instead of peer.
                                                                            
                                                                            
 Test errors of my implementation didn't achieve that of the experiment in the paper. It's just for personal study.
