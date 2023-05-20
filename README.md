@@ -3,6 +3,9 @@
  This repo is the unofficial implementation of a simple unsupervised example of FF in this paper.
 >[Geoffrey Hinton. The Forward-Forward Algorithm: Some Preliminary Investigations](https://arxiv.org/pdf/2212.13345.pdf)
 
+Done two implementations
+>1. Unsupervised learning using fully connected layers.
+>2. Unsupervised learning using local receptive fields(without weight sharing).
 
 ## Negative data
 <table>
